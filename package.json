@@ -1,0 +1,28 @@
+{
+  "name": "googleformchange-module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "zip": "zip -r lambda-deploy.zip index.js node_modules -x '*.DS_Store'",
+    "deploy": "bash deploy.sh",
+    "deploy:raw": "npm run zip && aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda-deploy.zip"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/78-artilleryman/googleFormChange-Module.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/78-artilleryman/googleFormChange-Module/issues"
+  },
+  "homepage": "https://github.com/78-artilleryman/googleFormChange-Module#readme",
+  "dependencies": {
+    "axios": "^1.13.4",
+    "cheerio": "^1.2.0"
+  }
+}
