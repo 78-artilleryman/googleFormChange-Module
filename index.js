@@ -230,6 +230,12 @@ exports.handler = async (event) => {
                 };
             });
 
+            const totalSectionCount = normalizedSections.length;
+            const totalQuestionCount = normalizedSections.reduce(
+                (count, section) => count + section.questions.length,
+                0
+            );
+
             // 우리 서비스 전용 JSON 구조로 변환
             return {
                 url: url,
@@ -237,6 +243,8 @@ exports.handler = async (event) => {
                 survey: {
                     title: rawData[8] || "제목 없는 설문",
                     description: rawData[1][0] || "",
+                    total_section_count: totalSectionCount,
+                    total_question_count: totalQuestionCount,
                     sections: normalizedSections
                 },
                 unsupported_questions: unsupportedQuestions
