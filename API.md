@@ -55,20 +55,22 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
         "sections": [
           {
             "id": "550e8400-e29b-41d4-a716-446655440000",
+            "order": 1,
             "title": "섹션 제목",
             "description": "섹션 설명",
+            "next_section_order": 2,
+            "is_next_section_custom": false,
             "questions": [
               {
-                "order": 1,
                 "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
                 "title": "질문 제목",
                 "description": "질문 설명",
                 "type": "multiple_choice",
                 "required": true,
                 "options": [
-                  { "text": "옵션 1", "is_other": false },
-                  { "text": "옵션 2", "is_other": false },
-                  { "text": "", "is_other": true }
+                  { "text": "옵션 1", "go_to_section_order": null, "is_other": false },
+                  { "text": "옵션 2", "go_to_section_order": 2, "is_other": false },
+                  { "text": "", "go_to_section_order": null, "is_other": true }
                 ]
               }
             ]
@@ -138,15 +140,17 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
 | Field | Type | Description |
 |-------|------|-------------|
 | id | string | 섹션 UUID |
+| order | number | 섹션 순서 (1부터 시작) |
 | title | string | 섹션 제목 |
 | description | string | 섹션 설명 |
+| next_section_order | number \| null | 섹션의 다음 버튼 클릭 시 이동할 섹션 순서. 마지막 섹션이면 null |
+| is_next_section_custom | boolean | 구글 폼에서 섹션 다음 이동을 사용자 지정했는지 여부 |
 | questions | array | 질문 배열 |
 
 ### Question
 
 | Field | Type | Description |
 |-------|------|-------------|
-| order | number | 전체 질문 순서 (1부터 시작) |
 | id | string | 질문 UUID |
 | title | string | 질문 제목 |
 | description | string | 질문 설명 |
@@ -159,6 +163,7 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
 | Field | Type | Description |
 |-------|------|-------------|
 | text | string | 선택지 텍스트 |
+| go_to_section_order | number \| null | 선택 시 이동할 섹션 순서. 이동 설정이 없으면 null |
 | is_other | boolean | 기타(직접 입력) 선택지 여부. 객관식/체크박스에서 제공됨 |
 
 ---
@@ -214,11 +219,13 @@ curl -X POST https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google 
         "sections": [
           {
             "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "order": 1,
             "title": "파티타임 설문",
             "description": "파티타임 참가 신청서입니다.",
+            "next_section_order": 2,
+            "is_next_section_custom": false,
             "questions": [
               {
-                "order": 1,
                 "id": "12345678-1234-1234-1234-123456789012",
                 "title": "이름을 입력해주세요",
                 "description": "",
@@ -227,17 +234,16 @@ curl -X POST https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google 
                 "options": []
               },
               {
-                "order": 2,
                 "id": "87654321-4321-4321-4321-210987654321",
                 "title": "참석 여부",
                 "description": "",
                 "type": "multiple_choice",
                 "required": true,
                 "options": [
-                  { "text": "참석", "is_other": false },
-                  { "text": "불참", "is_other": false },
-                  { "text": "미정", "is_other": false },
-                  { "text": "", "is_other": true }
+                  { "text": "참석", "go_to_section_order": null, "is_other": false },
+                  { "text": "불참", "go_to_section_order": 2, "is_other": false },
+                  { "text": "미정", "go_to_section_order": null, "is_other": false },
+                  { "text": "", "go_to_section_order": null, "is_other": true }
                 ]
               }
             ]

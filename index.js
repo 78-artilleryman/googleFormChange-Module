@@ -20,9 +20,53 @@ const TYPE_NAMES = {
 const UNSUPPORTED_TYPES = [3, 7, 10, 13]; // dropdown, grid, time, file_upload
 const OTHER_OPTION_TYPES = new Set([2, 4]); // multiple_choice, checkbox
 
-function mapOption(type, opt) {
+function toSectionKey(value, sectionKeySet) {
+    if (value == null) return null;
+    const key = String(value);
+    return sectionKeySet.has(key) ? key : null;
+}
+
+function collectSectionKeys(value, sectionKeySet, results = [], visited = new Set()) {
+    if (value == null) return results;
+
+    const directKey = toSectionKey(value, sectionKeySet);
+    if (directKey) {
+        results.push(directKey);
+        return results;
+    }
+
+    if (typeof value !== "object") return results;
+    if (visited.has(value)) return results;
+    visited.add(value);
+
+    if (Array.isArray(value)) {
+        value.forEach((item) => collectSectionKeys(item, sectionKeySet, results, visited));
+        return results;
+    }
+
+    Object.values(value).forEach((child) => collectSectionKeys(child, sectionKeySet, results, visited));
+    return results;
+}
+
+function resolveOptionTargetSectionKey(opt, sectionKeySet) {
+    // Payload shape에 의존하지 않고 전체 구조에서 섹션 키 후보를 탐색
+    return collectSectionKeys(opt, sectionKeySet)[0] ?? null;
+}
+
+function resolveSectionNextTargetKey(rawSectionItem, currentSectionKey, sectionKeySet) {
+    // Payload shape에 의존하지 않고 전체 구조에서 섹션 키 후보를 탐색 (자기 자신 제외)
+    const allKeys = collectSectionKeys(rawSectionItem, sectionKeySet);
+    return allKeys.find((key) => key !== currentSectionKey) ?? null;
+}
+
+function mapOption(type, opt, sectionOrderByKey, sectionKeySet) {
     const text = typeof opt?.[0] === "string" ? opt[0] : "";
     const option = { text };
+    const targetSectionKey = resolveOptionTargetSectionKey(opt, sectionKeySet);
+
+    option.go_to_section_order = targetSectionKey
+        ? sectionOrderByKey.get(targetSectionKey) ?? null
+        : null;
 
     if (OTHER_OPTION_TYPES.has(type)) {
         const hasOtherFlag = [opt?.[4], opt?.[5], opt?.[6]].some(v => v === 1 || v === true);
@@ -66,8 +110,25 @@ exports.handler = async (event) => {
             const formDesc = rawData[1][0] || "";
             const sections = [];
             const unsupportedQuestions = []; // 지원하지 않는 질문들
+            const sectionOrderByKey = new Map();
+            let scannedSectionOrder = 1;
+
+            allItems.forEach((item) => {
+                if (item?.[3] === 8) {
+                    scannedSectionOrder += 1;
+                    if (item?.[0] != null) {
+                        sectionOrderByKey.set(String(item[0]), scannedSectionOrder);
+                    }
+                }
+            });
+
+            const sectionKeySet = new Set(sectionOrderByKey.keys());
+            let currentSectionOrder = 1;
             let currentSection = {
                 id: crypto.randomUUID(),
+                order: currentSectionOrder,
+                sectionKey: null,
+                rawSectionItem: null,
                 title: formTitle,
                 description: formDesc,
                 questions: []
@@ -81,8 +142,12 @@ exports.handler = async (event) => {
                     if (currentSection.questions.length > 0 || currentSection.title) {
                         sections.push(currentSection);
                     }
+                    currentSectionOrder += 1;
                     currentSection = {
                         id: crypto.randomUUID(),
+                        order: currentSectionOrder,
+                        sectionKey: q?.[0] != null ? String(q[0]) : null,
+                        rawSectionItem: q,
                         title: q[1],
                         description: q[2] || "",
                         questions: []
@@ -100,13 +165,12 @@ exports.handler = async (event) => {
                         // 질문을 현재 섹션에 추가
                         const options = q[4]?.[0]?.[1] || [];
                         currentSection.questions.push({
-                            order: idx + 1,
                             id: crypto.randomUUID(),
                             title: q[1],
                             description: q[2] || "",
                             type: TYPE_NAMES[type] ?? `unknown(${type})`,
                             required: q[4]?.[0]?.[2] === 1,
-                            options: options.map(opt => mapOption(type, opt))
+                            options: options.map(opt => mapOption(type, opt, sectionOrderByKey, sectionKeySet))
                         });
                     }
                 }
@@ -117,6 +181,28 @@ exports.handler = async (event) => {
                 sections.push(currentSection);
             }
 
+            const normalizedSections = sections.map((section, index) => {
+                const defaultNextOrder = index < sections.length - 1 ? sections[index + 1].order : null;
+                const customTargetKey = resolveSectionNextTargetKey(
+                    section.rawSectionItem,
+                    section.sectionKey,
+                    sectionKeySet
+                );
+                const customNextOrder = customTargetKey
+                    ? sectionOrderByKey.get(customTargetKey) ?? null
+                    : null;
+
+                return {
+                    id: section.id,
+                    order: section.order,
+                    title: section.title,
+                    description: section.description,
+                    next_section_order: customNextOrder ?? defaultNextOrder,
+                    is_next_section_custom: customNextOrder !== null,
+                    questions: section.questions
+                };
+            });
+
             // 우리 서비스 전용 JSON 구조로 변환
             return {
                 url: url,
@@ -124,7 +210,7 @@ exports.handler = async (event) => {
                 survey: {
                     title: rawData[8] || "제목 없는 설문",
                     description: rawData[1][0] || "",
-                    sections: sections
+                    sections: normalizedSections
                 },
                 unsupported_questions: unsupportedQuestions
             };
