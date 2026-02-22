@@ -17,7 +17,7 @@ const TYPE_NAMES = {
 };
 
 // 서비스에서 지원하지 않는 타입
-const UNSUPPORTED_TYPES = [3, 4, 7, 10, 13]; // dropdown, checkbox, grid, time, file_upload
+const UNSUPPORTED_TYPES = [3, 7, 10, 13]; // dropdown, grid, time, file_upload
 
 exports.handler = async (event) => {
     // 1. 입력 데이터 파싱 (JSON 배열을 받음)

@@ -78,7 +78,7 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
         {
           "order": 5,
           "title": "지원하지 않는 질문",
-          "type": "checkbox",
+          "type": "dropdown",
           "reason": "unsupported_question_type"
         }
       ]
@@ -168,6 +168,7 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
 | short_answer | 단답형 |
 | paragraph | 장문형 |
 | multiple_choice | 객관식 |
+| checkbox | 체크박스 |
 | linear_scale | 선형 척도 |
 | date | 날짜 |
 | star_rating | 별점 |
@@ -179,7 +180,6 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
 | Type | Description |
 |------|-------------|
 | dropdown | 드롭다운 |
-| checkbox | 체크박스 |
 | grid | 그리드 |
 | time | 시간 |
 | file_upload | 파일 업로드 |
