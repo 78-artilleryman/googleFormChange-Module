@@ -26,13 +26,17 @@ function toSectionKey(value, sectionKeySet) {
     return sectionKeySet.has(key) ? key : null;
 }
 
-function collectSectionKeys(value, sectionKeySet, results = [], visited = new Set()) {
+function collectSectionKeyCandidates(value, sectionKeySet, path = [], results = [], visited = new Set()) {
     if (value == null) return results;
 
     const directKey = toSectionKey(value, sectionKeySet);
     if (directKey) {
-        results.push(directKey);
-        return results;
+        results.push({
+            key: directKey,
+            path,
+            depth: path.length,
+            valueType: typeof value
+        });
     }
 
     if (typeof value !== "object") return results;
@@ -40,23 +44,44 @@ function collectSectionKeys(value, sectionKeySet, results = [], visited = new Se
     visited.add(value);
 
     if (Array.isArray(value)) {
-        value.forEach((item) => collectSectionKeys(item, sectionKeySet, results, visited));
+        value.forEach((item, idx) => collectSectionKeyCandidates(item, sectionKeySet, [...path, idx], results, visited));
         return results;
     }
 
-    Object.values(value).forEach((child) => collectSectionKeys(child, sectionKeySet, results, visited));
+    Object.entries(value).forEach(([k, child]) => {
+        collectSectionKeyCandidates(child, sectionKeySet, [...path, k], results, visited);
+    });
+
     return results;
 }
 
 function resolveOptionTargetSectionKey(opt, sectionKeySet) {
-    // Payload shape에 의존하지 않고 전체 구조에서 섹션 키 후보를 탐색
-    return collectSectionKeys(opt, sectionKeySet)[0] ?? null;
+    // 옵션 텍스트(opt[0]) 같은 위치는 우선순위를 낮추고, 얕은 깊이의 숫자 키를 우선 선택
+    const candidates = collectSectionKeyCandidates(opt, sectionKeySet)
+        .filter(({ path, valueType }) => path.length > 0 && path[0] !== 0 && valueType === "number");
+
+    if (candidates.length === 0) {
+        const fallback = collectSectionKeyCandidates(opt, sectionKeySet)
+            .filter(({ path }) => path.length > 0 && path[0] !== 0);
+        return fallback[0]?.key ?? null;
+    }
+
+    candidates.sort((a, b) => a.depth - b.depth);
+    return candidates[0].key;
 }
 
 function resolveSectionNextTargetKey(rawSectionItem, currentSectionKey, sectionKeySet) {
-    // Payload shape에 의존하지 않고 전체 구조에서 섹션 키 후보를 탐색 (자기 자신 제외)
-    const allKeys = collectSectionKeys(rawSectionItem, sectionKeySet);
-    return allKeys.find((key) => key !== currentSectionKey) ?? null;
+    // 섹션 아이템 전체에서 후보를 찾되, 현재 섹션 자기 키는 제외
+    const candidates = collectSectionKeyCandidates(rawSectionItem, sectionKeySet)
+        .filter(({ key, path }) => key !== currentSectionKey && !(path.length === 1 && path[0] === 0));
+
+    if (candidates.length === 0) return null;
+
+    // 얕은 깊이의 숫자 키를 우선해서 "다음 섹션" 타깃으로 해석
+    const numericCandidates = candidates.filter(({ valueType }) => valueType === "number");
+    const targetPool = numericCandidates.length > 0 ? numericCandidates : candidates;
+    targetPool.sort((a, b) => a.depth - b.depth);
+    return targetPool[0].key;
 }
 
 function mapOption(type, opt, sectionOrderByKey, sectionKeySet) {
@@ -182,10 +207,13 @@ exports.handler = async (event) => {
             }
 
             const normalizedSections = sections.map((section, index) => {
-                const defaultNextOrder = index < sections.length - 1 ? sections[index + 1].order : null;
+                const nextSection = index < sections.length - 1 ? sections[index + 1] : null;
+                const defaultNextOrder = nextSection ? nextSection.order : null;
+                // 구글 폼은 "섹션 N의 next" 정보를 섹션 N 자신이 아닌
+                // 섹션 N+1의 헤더 index[5]에 저장한다 (off-by-one 구조)
                 const customTargetKey = resolveSectionNextTargetKey(
-                    section.rawSectionItem,
-                    section.sectionKey,
+                    nextSection?.rawSectionItem ?? null,
+                    nextSection?.sectionKey ?? null,
                     sectionKeySet
                 );
                 const customNextOrder = customTargetKey
@@ -198,7 +226,6 @@ exports.handler = async (event) => {
                     title: section.title,
                     description: section.description,
                     next_section_order: customNextOrder ?? defaultNextOrder,
-                    is_next_section_custom: customNextOrder !== null,
                     questions: section.questions
                 };
             });

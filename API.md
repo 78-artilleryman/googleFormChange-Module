@@ -59,7 +59,6 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
             "title": "섹션 제목",
             "description": "섹션 설명",
             "next_section_order": 2,
-            "is_next_section_custom": false,
             "questions": [
               {
                 "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
@@ -144,7 +143,6 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
 | title | string | 섹션 제목 |
 | description | string | 섹션 설명 |
 | next_section_order | number \| null | 섹션의 다음 버튼 클릭 시 이동할 섹션 순서. 마지막 섹션이면 null |
-| is_next_section_custom | boolean | 구글 폼에서 섹션 다음 이동을 사용자 지정했는지 여부 |
 | questions | array | 질문 배열 |
 
 ### Question
@@ -223,7 +221,6 @@ curl -X POST https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google 
             "title": "파티타임 설문",
             "description": "파티타임 참가 신청서입니다.",
             "next_section_order": 2,
-            "is_next_section_custom": false,
             "questions": [
               {
                 "id": "12345678-1234-1234-1234-123456789012",
