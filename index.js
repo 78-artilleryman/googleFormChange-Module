@@ -18,6 +18,19 @@ const TYPE_NAMES = {
 
 // 서비스에서 지원하지 않는 타입
 const UNSUPPORTED_TYPES = [3, 7, 10, 13]; // dropdown, grid, time, file_upload
+const OTHER_OPTION_TYPES = new Set([2, 4]); // multiple_choice, checkbox
+
+function mapOption(type, opt) {
+    const text = typeof opt?.[0] === "string" ? opt[0] : "";
+    const option = { text };
+
+    if (OTHER_OPTION_TYPES.has(type)) {
+        const hasOtherFlag = [opt?.[4], opt?.[5], opt?.[6]].some(v => v === 1 || v === true);
+        option.is_other = text.trim() === "" || hasOtherFlag;
+    }
+
+    return option;
+}
 
 exports.handler = async (event) => {
     // 1. 입력 데이터 파싱 (JSON 배열을 받음)
@@ -93,7 +106,7 @@ exports.handler = async (event) => {
                             description: q[2] || "",
                             type: TYPE_NAMES[type] ?? `unknown(${type})`,
                             required: q[4]?.[0]?.[2] === 1,
-                            options: options.map(opt => ({ text: opt[0] }))
+                            options: options.map(opt => mapOption(type, opt))
                         });
                     }
                 }

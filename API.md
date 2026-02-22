@@ -66,8 +66,9 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
                 "type": "multiple_choice",
                 "required": true,
                 "options": [
-                  { "text": "옵션 1" },
-                  { "text": "옵션 2" }
+                  { "text": "옵션 1", "is_other": false },
+                  { "text": "옵션 2", "is_other": false },
+                  { "text": "", "is_other": true }
                 ]
               }
             ]
@@ -158,6 +159,7 @@ https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google
 | Field | Type | Description |
 |-------|------|-------------|
 | text | string | 선택지 텍스트 |
+| is_other | boolean | 기타(직접 입력) 선택지 여부. 객관식/체크박스에서 제공됨 |
 
 ---
 
@@ -232,9 +234,10 @@ curl -X POST https://3biqtf8lp1.execute-api.ap-northeast-2.amazonaws.com/google 
                 "type": "multiple_choice",
                 "required": true,
                 "options": [
-                  { "text": "참석" },
-                  { "text": "불참" },
-                  { "text": "미정" }
+                  { "text": "참석", "is_other": false },
+                  { "text": "불참", "is_other": false },
+                  { "text": "미정", "is_other": false },
+                  { "text": "", "is_other": true }
                 ]
               }
             ]
